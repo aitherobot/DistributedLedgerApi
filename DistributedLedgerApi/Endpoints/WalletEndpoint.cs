@@ -21,6 +21,8 @@ public static class WalletEndpoint
 
         group.MapPost("/", CreateWalletAsync);
 
+        group.MapGet("/{id:guid}", GetWalletByIdAsync);
+
         return group;
     }
 
@@ -38,5 +40,19 @@ public static class WalletEndpoint
 
         await Task.CompletedTask;
         return TypedResults.Created($"/api/wallets/{wallet.Id}", wallet);
+    }
+
+    private static async Task<Results<Ok<WalletResponse>, NotFound>> GetWalletByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var wallet = Wallets.FirstOrDefault(w => w.Key == id).Value;
+        if (wallet is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        await Task.CompletedTask;
+        return TypedResults.Ok(wallet);
     }
 }
