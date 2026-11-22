@@ -23,7 +23,17 @@ public static class WalletEndpoint
 
         group.MapGet("/{id:guid}", GetWalletByIdAsync);
 
+        group.MapGet("/", GetAllWalletsAsync);
+
         return group;
+    }
+
+    private static async Task<Ok<List<WalletResponse>>> GetAllWalletsAsync()
+    {
+        var wallets = Wallets.Values.ToList();
+
+        await Task.CompletedTask;
+        return TypedResults.Ok(wallets);
     }
 
     private static async Task<Created<WalletResponse>> CreateWalletAsync(CreateWalletRequest request, CancellationToken cancellationToken)
