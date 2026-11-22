@@ -5,6 +5,8 @@ namespace DistributedLedgerApi.Endpoints;
 
 public record CreateWalletRequest(string Name, decimal InitialBalance);
 
+public record UpdateWalletRequest(string Name);
+
 public record WalletResponse(
     Guid Id,
     string Name,
@@ -25,7 +27,27 @@ public static class WalletEndpoint
 
         group.MapGet("/", GetAllWalletsAsync);
 
+        group.MapPut("/{id:guid}", UpdateWalletAsync);
+
         return group;
+    }
+
+    private static async Task<Results<Ok<WalletResponse>, NotFound>> UpdateWalletAsync(Guid id, UpdateWalletRequest request, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var wallet = Wallets.FirstOrDefault(w => w.Key == id).Value;
+        if (wallet is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        wallet = wallet with { Name = request.Name };
+        wallet = new WalletResponse(wallet.Id, request.Name, wallet.Balance);
+        Wallets[id] = wallet;
+
+        await Task.CompletedTask;
+        return TypedResults.Ok(wallet);
     }
 
     private static async Task<Ok<List<WalletResponse>>> GetAllWalletsAsync()
