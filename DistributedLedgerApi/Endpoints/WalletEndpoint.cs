@@ -28,26 +28,39 @@ public static class WalletEndpoint
         group.MapGet("/", GetAllWalletsAsync);
 
         group.MapPut("/{id:guid}", UpdateWalletAsync);
+        
+        group.MapDelete("/{id:guid}", DeleteWalletAsync);
 
         return group;
+    }
+    
+    private static async Task<Results<NoContent, NotFound>> DeleteWalletAsync(Guid id, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        if (!Wallets.Remove(id))
+        {
+            return TypedResults.NotFound();
+        }
+        
+        await Task.CompletedTask;
+        return TypedResults.NoContent();
     }
 
     private static async Task<Results<Ok<WalletResponse>, NotFound>> UpdateWalletAsync(Guid id, UpdateWalletRequest request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var wallet = Wallets.FirstOrDefault(w => w.Key == id).Value;
-        if (wallet is null)
+        if (!Wallets.TryGetValue(id, out var existingWallet))
         {
             return TypedResults.NotFound();
         }
 
-        wallet = wallet with { Name = request.Name };
-        wallet = new WalletResponse(wallet.Id, request.Name, wallet.Balance);
-        Wallets[id] = wallet;
+        var updatedWallet = existingWallet with { Name = request.Name };
+        Wallets[id] = updatedWallet;
 
         await Task.CompletedTask;
-        return TypedResults.Ok(wallet);
+        return TypedResults.Ok(updatedWallet);
     }
 
     private static async Task<Ok<List<WalletResponse>>> GetAllWalletsAsync()
